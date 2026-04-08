@@ -817,7 +817,8 @@ footer {
 }
 
 footer .info {
-  padding-left: 220px;
+  margin: 0;
+  padding-left: 0;
   box-sizing: border-box;
 }
 
