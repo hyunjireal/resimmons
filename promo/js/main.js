@@ -555,4 +555,102 @@ document.addEventListener('DOMContentLoaded', () => {
     img.addEventListener('dragstart', (e) => e.preventDefault());
     img.addEventListener('contextmenu', (e) => e.preventDefault());
   });
+  // Review Section scroll animation
+  const reviewSection = document.querySelector('.review');
+  const reviewCardsStack = document.querySelector('.review_cards_stack');
+  let reviewDragOffset = 0;
+
+  if (reviewSection) {
+    window.addEventListener('scroll', () => {
+      const rect = reviewSection.getBoundingClientRect();
+      // Trigger animation shortly after entering the sticky area
+      if (rect.top < -50) {
+        if (!reviewSection.classList.contains('is-scrolled')) {
+          reviewSection.classList.add('is-scrolled');
+          if (reviewCardsStack) {
+            reviewCardsStack.style.transition = 'transform 1s cubic-bezier(0.22, 1, 0.36, 1)';
+          }
+        }
+      } else {
+        if (reviewSection.classList.contains('is-scrolled')) {
+          reviewSection.classList.remove('is-scrolled');
+          if (reviewCardsStack) {
+            reviewDragOffset = 0;
+            reviewCardsStack.style.transition = 'transform 1s cubic-bezier(0.22, 1, 0.36, 1)';
+            reviewCardsStack.style.transform = `translateX(0px)`;
+          }
+        }
+      }
+    });
+  }
+
+  if (reviewSection && reviewCardsStack) {
+    let isDragging = false;
+    let startX = 0;
+    let currentX = 0;
+
+    reviewCardsStack.addEventListener('pointerdown', (e) => {
+      if (!reviewSection.classList.contains('is-scrolled')) return;
+      isDragging = true;
+      startX = e.clientX;
+      reviewCardsStack.style.cursor = 'grabbing';
+      reviewCardsStack.style.transition = 'none';
+      reviewCardsStack.setPointerCapture(e.pointerId);
+    });
+
+    reviewCardsStack.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - startX;
+      currentX = reviewDragOffset + deltaX;
+      
+      const maxDrag = window.innerWidth >= 1024 ? 1100 : window.innerWidth * 1.2;
+      currentX = Math.max(-maxDrag, Math.min(maxDrag, currentX));
+      
+      reviewCardsStack.style.transform = `translateX(${currentX}px)`;
+    });
+
+    const stopDrag = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      reviewDragOffset = currentX;
+      
+      // If it hasn't un-scrolled, allow grabbing
+      if (reviewSection.classList.contains('is-scrolled')) {
+        reviewCardsStack.style.cursor = 'grab';
+      }
+      
+      reviewCardsStack.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)';
+      if (reviewCardsStack.hasPointerCapture(e.pointerId)) {
+        reviewCardsStack.releasePointerCapture(e.pointerId);
+      }
+    };
+
+    reviewCardsStack.addEventListener('pointerup', stopDrag);
+    reviewCardsStack.addEventListener('pointercancel', stopDrag);
+    
+    reviewCardsStack.addEventListener('pointerenter', () => {
+      if (reviewSection.classList.contains('is-scrolled') && !isDragging) {
+        reviewCardsStack.style.cursor = 'grab';
+      }
+    });
+  }
+
+  // Inquiry Section scroll animation
+  const inquirySection = document.querySelector('.inquiry');
+  if (inquirySection) {
+    window.addEventListener('scroll', () => {
+      const rect = inquirySection.getBoundingClientRect();
+      const stickyTop = window.innerHeight * 0.2; // Matches CSS top: 20vh
+      const scrollPassed = stickyTop - rect.top;
+      
+      inquirySection.classList.remove('is-scrolled', 'is-step3');
+      
+      if (scrollPassed > window.innerHeight * 0.45) {
+        inquirySection.classList.add('is-scrolled', 'is-step3');
+      } else if (scrollPassed > 50) {
+        inquirySection.classList.add('is-scrolled');
+      }
+    });
+  }
+
 }); //dom end
