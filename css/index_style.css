@@ -2757,18 +2757,29 @@ body {
 
     .main_visual,
     .main_visual_inner {
-        min-height: 720px;
-        min-height: max(720px, 100vh);
-        min-height: max(720px, 100dvh);
+        min-height: 1080px;
+        min-height: max(1080px, 100vh);
+        min-height: max(1080px, 100dvh);
+        height: auto;
+    }
+
+    .main_visual_inner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1px 100px 0;
+        box-sizing: border-box;
     }
 
     .main_visual_copy {
-        top: 167px;
-        left: 100px;
+        position: static;
         width: 480px;
+        max-width: 100%;
+        text-align: center;
     }
 
     .main_visual_title {
+        margin: 0 auto;
         width: 395px;
     }
 
@@ -2778,11 +2789,16 @@ body {
         object-fit: contain;
     }
 
+    .main_visual_line {
+        margin: 32px auto 0;
+    }
+
     .main_visual_desc {
         font-family: 'Roboto', sans-serif;
         font-size: 21px;
         line-height: 1.3;
         letter-spacing: -0.02em;
+        text-align: center;
     }
 
     .banner_all {
@@ -2796,6 +2812,7 @@ body {
 
     .story {
         min-height: 920px;
+        padding-top: 0;
     }
 
     .story_inner {
@@ -2846,11 +2863,28 @@ body {
 
     .story_button {
         bottom: 200px;
+        width: 420px;
+        height: 100px;
     }
 
     .story_button_content {
         gap: 18px;
         padding: 0 70px 0 90px;
+    }
+
+    .story_button_text {
+        font-size: 24px;
+    }
+
+    .story_button_icon {
+        flex-basis: 42px;
+        width: 42px;
+        height: 42px;
+    }
+
+    .story_button_icon svg {
+        width: 82px;
+        height: 82px;
     }
 
     .product {
@@ -2876,7 +2910,7 @@ body {
     }
 
     .product_circle {
-        top: 50%;
+        top: 40%;
         left: -430px;
         width: 880px;
         height: auto;
@@ -2887,21 +2921,32 @@ body {
     .product_circle_badge {
         width: 340px;
         height: 340px;
+        --product-badge-label-offset-x: 68px;
     }
 
     .product_circle_badge span {
         font-size: 42px;
-        transform: translateX(32px);
+        transform: translateX(var(--product-badge-label-offset-x));
     }
 
     .product_scroll {
         top: 50%;
         left: auto;
-        right: -8px;
+        right: 84px;
         bottom: auto;
         transform: translateY(-50%);
         flex-direction: column;
     }
+
+    .product_scroll_arrow {
+    width: 36px;
+    height: 36px;
+}
+
+.product_scroll_arrow img {
+    width: 28px;
+    height: 28px;
+}
 
     .product_panel {
         min-height: 860px;
@@ -2912,19 +2957,20 @@ body {
         justify-items: start;
         justify-content: start;
         align-content: start;
-        padding: 150px 140px 0 0;
+        padding: 132px 88px 0 0;
     }
 
     .product_content {
         width: 760px;
         min-height: 0;
-        margin-left: 0;
+        margin-left: -96px;
+        margin-top: -72px;
         text-align: center;
         z-index: 2;
     }
 
     .product_heading {
-        gap: 8px;
+        gap: 2px;
         padding-left: 0;
         justify-content: center;
     }
@@ -2962,8 +3008,8 @@ body {
 
     .product_image {
         position: absolute;
-        left: 0;
-        bottom: 120px;
+        left: -84px;
+        bottom: 176px;
         width: min(100%, 980px);
         margin-left: 0;
         justify-self: start;
@@ -3010,11 +3056,39 @@ body {
 
     .sleep_solution .btn_test {
         bottom: 88px;
+        width: 420px;
+        height: 100px;
+    }
+
+    .sleep_solution_button {
+        width: 420px;
+        height: 100px;
+    }
+
+    .sleep_solution_button_content {
+        gap: 18px;
+        padding: 0 70px 0 90px;
+    }
+
+    .sleep_solution_button_text {
+        font-size: 24px;
+        transform: translateX(18px);
+    }
+
+    .sleep_solution_button_icon {
+        flex-basis: 42px;
+        width: 42px;
+        height: 42px;
+    }
+
+    .sleep_solution_button_icon svg {
+        width: 82px;
+        height: 82px;
     }
 
     .offline {
-        min-height: 980px;
-        padding: 82px 44px 64px;
+        min-height: 900px;
+        padding: 82px 44px 0;
     }
 
     .offline_track {
@@ -3061,33 +3135,39 @@ body {
 
     .offline_title {
         position: absolute;
-        top: 270px;
-        left: 26px;
-        right: 26px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
+        top: 248px;
+        left: 0;
+        right: 0;
+        display: block;
         text-align: left;
     }
 
     .offline_title_left {
+        position: absolute;
+        left: 36px;
+        top: 0;
+        max-width: calc(50% - 190px);
         font-weight: 500;
         font-size: 42px;
         line-height: 1.3;
+        white-space: nowrap;
     }
 
     .offline_title_right {
+        position: absolute;
+        right: 36px;
+        top: 0;
+        max-width: calc(50% - 190px);
         font-weight: 400;
         font-size: 48px;
         line-height: 1.3;
         text-align: right;
+        white-space: nowrap;
     }
 
     .offline_description {
         position: absolute;
-        top: 462px;
+        top: 430px;
         left: 28px;
         max-width: 290px;
         align-items: flex-start;
@@ -3137,12 +3217,13 @@ body {
     }
 
     .offline_card_button_content {
-        gap: 8px;
-        padding: 0 10px 0 16px;
+        gap: 80px;
+        padding: 0 8px 0 14px;
     }
 
     .offline_card_button_text {
         font-size: 12px;
+        transform: translateX(-4px);
     }
 
     .offline_card_button_icon {
@@ -3157,6 +3238,9 @@ body {
     }
 
     .review {
+        width: calc(100% + (2 * clamp(20px, 6vw, 96px)));
+        margin-left: calc(clamp(20px, 6vw, 96px) * -1);
+        margin-right: calc(clamp(20px, 6vw, 96px) * -1);
         margin-top: -84px;
         min-height: auto;
         overflow: visible;
@@ -3175,7 +3259,9 @@ body {
     }
 
     .review_content {
-        width: 100%;
+        width: min(calc(100vw - 40px), 100%);
+        margin-left: auto;
+        margin-right: auto;
         margin-top: 48px;
         overflow: visible;
     }
@@ -3276,15 +3362,23 @@ body {
         left: auto;
         bottom: auto;
         transform: none;
-        width: 304px;
-        height: 78px;
+        width: 260px;
+        height: 66px;
+        padding: 6px;
         margin: 36px auto 0;
         display: inline-flex;
     }
 
+    .review_filter_option,
+    .review_filter_option.is-active {
+        width: 121px;
+        height: 54px;
+        font-size: 20px;
+    }
+
     .event {
-        min-height: 820px;
-        padding: 120px 0 24px;
+        min-height: 620px;
+        padding: 120px 0 0;
     }
 
     .event_card_stack {
@@ -3396,7 +3490,7 @@ body {
     .event_more_button {
         width: 360px;
         height: 88px;
-        margin-top: 28px;
+        margin-top: 12px;
     }
 
     .event_more_button_content {
@@ -3427,25 +3521,37 @@ body {
         height: auto;
     }
 
+    .main_visual_inner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0 30px;
+        box-sizing: border-box;
+    }
+
     .main_visual_copy {
-        top: 135px;
-        left: 30px;
-        width: 185px;
+        position: static;
+        width: 140px;
+        max-width: 100%;
+        text-align: center;
     }
 
-    .main_visual_title {
-        width: 160px;
+    .main_visual_copy .main_visual_title {
+        margin: 0 auto;
+        width: 72px !important;
     }
 
-    .main_visual_title img {
-        width: 160px;
-        height: 48px;
+    .main_visual_copy .main_visual_title img {
+        width: 72px !important;
+        height: 22px !important;
+        max-width: 72px !important;
         object-fit: contain;
+        display: block;
     }
 
     .main_visual_line {
-        width: 185px;
-        margin-top: 10px;
+        width: 140px;
+        margin: 10px auto 0;
     }
 
     .main_visual_desc {
@@ -3454,6 +3560,7 @@ body {
         font-size: 9px;
         line-height: 1.3;
         letter-spacing: -0.02em;
+        text-align: center;
     }
 
     .banner_all {
@@ -3998,6 +4105,136 @@ body {
 
     .offline::after {
         display: none;
+    }
+}
+
+@media (min-width: 1025px) and (max-width: 1034px) {
+    .review {
+        margin-top: 12px;
+        min-height: auto;
+        overflow: visible;
+    }
+
+    .review_inner {
+        min-height: auto;
+        padding: 116px 0 190px;
+        align-items: stretch;
+    }
+
+    .review::before {
+        top: -142px;
+        width: 158%;
+        height: 248px;
+    }
+
+    .review_content {
+        width: min(calc(100vw - 40px), 100%);
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 48px;
+        overflow: visible;
+    }
+
+    .review_stage {
+        width: 100%;
+        height: 350px;
+        min-height: 350px;
+        margin-top: 32px;
+        padding: 0 20px;
+        position: relative;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .review_set {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: 20px;
+        padding: 0 20px;
+        width: max-content;
+        will-change: auto;
+    }
+
+    .review_set:not(.is-active) {
+        pointer-events: none;
+    }
+
+    .review_card_slot {
+        width: 226px;
+        height: 350px;
+        flex: 0 0 226px;
+    }
+
+    .review_card_slot_01,
+    .review_card_slot_02,
+    .review_card_slot_03,
+    .review_card_slot_04 {
+        margin-top: 0;
+    }
+
+    .review_card {
+        width: 226px;
+        height: 350px;
+    }
+
+    .review_card_face {
+        gap: 10px;
+        padding: 20px;
+    }
+
+    .review_card_heading {
+        font-size: 25px;
+        line-height: 1.3;
+    }
+
+    .review_profile {
+        gap: 10px;
+        margin-top: 0;
+    }
+
+    .review_profile_avatar {
+        width: 34px;
+        height: 34px;
+    }
+
+    .review_profile_avatar img {
+        width: 16px;
+        height: 16px;
+    }
+
+    .review_profile_name {
+        font-size: 11px;
+        line-height: 1.4;
+    }
+
+    .star_all {
+        gap: 2px;
+    }
+
+    .star_all img {
+        width: 13px;
+        height: 13px;
+    }
+
+    .review_card_image {
+        width: 190px;
+        height: 190px;
+        border-radius: 8px;
+    }
+
+    .review_filter_button {
+        position: static;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        width: 304px;
+        height: 78px;
+        margin: 36px auto 0;
+        display: inline-flex;
     }
 }
 

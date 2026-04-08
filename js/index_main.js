@@ -267,7 +267,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (storySection && storyInner && storyImage && storyKeywords.length && storyButton) {
-        const isStoryStaticLayout = () => window.innerWidth <= 1024;
+        // Keep the story section non-pinned across the full tablet range
+        // so 1024px landscape layouts do not re-enable ScrollTrigger pinning.
+        const isStoryStaticLayout = () => getResponsiveMode() !== 'desktop';
+        const isStoryTabletLayout = () => getResponsiveMode() === 'tablet';
         let storyLayoutMode = isStoryStaticLayout() ? 'static' : 'interactive';
 
         const setStoryFloatingState = (isActive) => {
@@ -281,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const setReducedMotionStoryState = () => {
             ScrollTrigger.getById('story-pin')?.kill();
+            ScrollTrigger.getById('story-tablet-button')?.kill();
             gsap.killTweensOf(storyKeywords);
             gsap.killTweensOf(storyButton);
 
@@ -297,23 +301,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const buildStoryScroll = () => {
             ScrollTrigger.getById('story-pin')?.kill();
+            ScrollTrigger.getById('story-tablet-button')?.kill();
             gsap.killTweensOf(storyKeywords);
             gsap.killTweensOf(storyButton);
 
-            const imageRect = storyImage.getBoundingClientRect();
-            const imageCenterX = imageRect.left + (imageRect.width / 2);
-            const imageCenterY = imageRect.top + (imageRect.height / 2);
-
             storyKeywordStates.forEach(({ element }) => {
-                const keyword = element;
-                const keywordRect = keyword.getBoundingClientRect();
-                const keywordCenterX = keywordRect.left + (keywordRect.width / 2);
-                const keywordCenterY = keywordRect.top + (keywordRect.height / 2);
-
-                gsap.set(keyword, {
-                    x: imageCenterX - keywordCenterX,
-                    y: imageCenterY - keywordCenterY,
-                    scale: 0.72,
+                gsap.set(element, {
                     autoAlpha: 0
                 });
             });
@@ -349,20 +342,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             storyTimeline
                 .to(storyKeywords, {
-                    x: 0,
-                    y: 0,
-                    scale: 1,
-                    duration: 0.38,
+                    autoAlpha: (index) => storyKeywordStates[index].baseOpacity,
+                    duration: 0.28,
                     stagger: {
-                        each: 0.03,
+                        each: 0.04,
                         from: 'center'
                     }
-                }, 0.06)
-                .to(storyKeywords, {
-                    autoAlpha: (index) => storyKeywordStates[index].baseOpacity,
-                    duration: 0.12,
-                    stagger: 0.02
-                }, 0.4)
+                }, 0.14)
                 .to(storyButton, {
                     y: 0,
                     autoAlpha: 1,
@@ -371,8 +357,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 0.68);
         };
 
+        const buildStoryTabletReveal = () => {
+            ScrollTrigger.getById('story-pin')?.kill();
+            ScrollTrigger.getById('story-tablet-button')?.kill();
+            gsap.killTweensOf(storyKeywords);
+            gsap.killTweensOf(storyButton);
+
+            gsap.set(storyKeywords, {
+                clearProps: 'x,y,scale,autoAlpha'
+            });
+
+            gsap.set(storyButton, {
+                y: 36,
+                autoAlpha: 0
+            });
+
+            setStoryFloatingState(true);
+
+            gsap.to(storyButton, {
+                y: 0,
+                autoAlpha: 1,
+                duration: 0.5,
+                ease: 'power2.out',
+                overwrite: 'auto',
+                scrollTrigger: {
+                    id: 'story-tablet-button',
+                    trigger: storySection,
+                    start: 'top 72%',
+                    toggleActions: 'play none none reverse'
+                }
+            });
+        };
+
         const syncStoryInteraction = () => {
-            if (prefersReducedMotion || isStoryStaticLayout()) {
+            if (prefersReducedMotion) {
+                setReducedMotionStoryState();
+            } else if (isStoryTabletLayout()) {
+                buildStoryTabletReveal();
+            } else if (isStoryStaticLayout()) {
                 setReducedMotionStoryState();
             } else {
                 buildStoryScroll();
@@ -918,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
             products: [-10, -4, 4, 10],
             offline: [-14, 10, -6, 9]
         };
-        const isTabletReviewLayout = () => window.innerWidth <= 1024;
+        const isTabletReviewLayout = () => getResponsiveMode() !== 'desktop';
         let activeReviewCategory = reviewFilterOptions.find((option) => option.classList.contains('is-active'))?.dataset.reviewCategory || 'products';
         let reviewIntroPlayed = false;
         let isReviewTransitioning = false;
@@ -931,6 +953,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const getReviewSetSlots = (set) => Array.from(set.querySelectorAll('.review_card_slot'));
         const getReviewSetInners = (set) => Array.from(set.querySelectorAll('.review_card_inner'));
         const getReviewSlideDistance = () => reviewStage.offsetWidth + 220;
+        const getTabletReviewCenteredOffset = (set) => {
+            if (!set) {
+                return 0;
+            }
+
+            const stageWidth = reviewStage.clientWidth;
+            const setWidth = set.scrollWidth;
+
+            return (stageWidth - setWidth) / 2;
+        };
         const getReviewRotations = (set) => reviewSpreadRotationsByCategory[set.dataset.reviewSet] || reviewSpreadRotationsByCategory.products;
         const getReviewStackBaseY = (index) => index * 14;
         const getReviewStackScale = (index) => 1 - (index * 0.035);
@@ -941,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ScrollTrigger.getById('review-shell-scrub')?.kill();
             gsap.killTweensOf(reviewSection);
 
-            if (prefersReducedMotion) {
+            if (prefersReducedMotion || isTabletReviewLayout()) {
                 gsap.set(reviewSection, {
                     clearProps: 'transform'
                 });
@@ -1067,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isActive = set.dataset.reviewSet === activeReviewCategory;
                     set.classList.toggle('is-active', isActive);
                     setReviewSetState(set, {
-                        x: isActive ? 0 : (set.dataset.reviewSet === 'offline' ? tabletSlideDistance : -tabletSlideDistance),
+                        x: isActive ? getTabletReviewCenteredOffset(set) : (set.dataset.reviewSet === 'offline' ? tabletSlideDistance : -tabletSlideDistance),
                         stacked: false,
                         showBack: true,
                         zIndex: isActive ? 2 : 1
@@ -1218,6 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const slideDistance = reviewStage.offsetWidth;
+                const tabletTargetOffset = getTabletReviewCenteredOffset(nextSet);
                 const direction = targetCategory === 'offline' ? 1 : -1;
 
                 isReviewTransitioning = true;
@@ -1254,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
 
                         setReviewSetState(nextSet, {
-                            x: 0,
+                            x: tabletTargetOffset,
                             stacked: false,
                             showBack: true,
                             zIndex: 2
@@ -1268,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         x: -direction * slideDistance
                     }, 0)
                     .to(nextSet, {
-                        x: 0
+                        x: tabletTargetOffset
                     }, 0);
                 return;
             }
