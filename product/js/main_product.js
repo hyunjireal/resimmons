@@ -180,42 +180,67 @@ document.addEventListener('DOMContentLoaded', () => {
         window.ScrollTrigger
     ) {
         gsap.registerPlugin(ScrollTrigger);
+        const innovationMedia = gsap.matchMedia();
 
-        const setInnovationScroll = () => {
-            const firstCard = innovationCards[0];
-            const cardsHeight = infoTextBox.scrollHeight;
-            const viewHeight = innovationView.clientHeight;
-            const firstCardHeight = firstCard ? firstCard.offsetHeight : 0;
-            const initialOffset = Math.max((viewHeight - firstCardHeight) / 2 - 24, 0);
-            const travelDistance = Math.max(cardsHeight - viewHeight + initialOffset + 120, 0);
-
+        const clearInnovationScroll = () => {
             ScrollTrigger.getById('innovation-cards')?.kill();
             gsap.killTweensOf(infoTextBox);
-
-            gsap.set(infoTextBox, { y: initialOffset });
-            gsap.set(innovationCards, { y: 0 });
-
-            gsap.to(infoTextBox, {
-                y: -(travelDistance - initialOffset),
-                ease: 'none',
-                scrollTrigger: {
-                    id: 'innovation-cards',
-                    trigger: innovationHeading || innovationSection,
-                    start: 'top top+=160',
-                    end: () => `+=${Math.max(travelDistance + window.innerHeight * 0.35, window.innerHeight * 1.2)}`,
-                    scrub: 0.35,
-                    pin: innovationSection,
-                    pinSpacing: true,
-                    anticipatePin: 1,
-                    fastScrollEnd: true,
-                    invalidateOnRefresh: true
-                }
-            });
+            gsap.set(infoTextBox, { clearProps: 'transform' });
+            gsap.set(innovationCards, { clearProps: 'transform' });
         };
 
-        setInnovationScroll();
-        ScrollTrigger.addEventListener('refreshInit', setInnovationScroll);
-        window.addEventListener('resize', () => ScrollTrigger.refresh());
+        innovationMedia.add('(min-width: 1025px)', () => {
+            const setInnovationScroll = () => {
+                const firstCard = innovationCards[0];
+                const cardsHeight = infoTextBox.scrollHeight;
+                const viewHeight = innovationView.clientHeight;
+                const firstCardHeight = firstCard ? firstCard.offsetHeight : 0;
+                const initialOffset = Math.max((viewHeight - firstCardHeight) / 2 - 24, 0);
+                const travelDistance = Math.max(cardsHeight - viewHeight + initialOffset + 120, 0);
+
+                clearInnovationScroll();
+
+                gsap.set(infoTextBox, { y: initialOffset });
+                gsap.set(innovationCards, { y: 0 });
+
+                gsap.to(infoTextBox, {
+                    y: -(travelDistance - initialOffset),
+                    ease: 'none',
+                    scrollTrigger: {
+                        id: 'innovation-cards',
+                        trigger: innovationHeading || innovationSection,
+                        start: 'top top+=160',
+                        end: () => `+=${Math.max(travelDistance + window.innerHeight * 0.35, window.innerHeight * 1.2)}`,
+                        scrub: 0.35,
+                        pin: innovationSection,
+                        pinSpacing: true,
+                        anticipatePin: 1,
+                        fastScrollEnd: true,
+                        invalidateOnRefresh: true
+                    }
+                });
+            };
+
+            const handleInnovationResize = () => ScrollTrigger.refresh();
+
+            setInnovationScroll();
+            ScrollTrigger.addEventListener('refreshInit', setInnovationScroll);
+            window.addEventListener('resize', handleInnovationResize);
+
+            return () => {
+                ScrollTrigger.removeEventListener('refreshInit', setInnovationScroll);
+                window.removeEventListener('resize', handleInnovationResize);
+                clearInnovationScroll();
+            };
+        });
+
+        innovationMedia.add('(max-width: 1024px)', () => {
+            clearInnovationScroll();
+
+            return () => {
+                clearInnovationScroll();
+            };
+        });
     }
 
     if (techSection && techLayers.length && window.gsap && window.ScrollTrigger) {
@@ -226,7 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
         techMedia.add('(min-width: 961px)', () => {
             const rightLayers = Array.from(techLayers).filter((layer) => layer.dataset.direction === 'right');
             const leftLayers = Array.from(techLayers).filter((layer) => layer.dataset.direction === 'left');
-            const leftTriggerLayer = leftLayers[1] || leftLayers[0];
+            const isTabletViewport = window.matchMedia('(max-width: 1024px)').matches;
+            const leftTriggerLayer = isTabletViewport ? (leftLayers[0] || leftLayers[1]) : (leftLayers[1] || leftLayers[0]);
+            const leftTriggerStart = isTabletViewport ? 'top 68%' : 'top 52%';
+            const animationDurations = isTabletViewport
+                ? { visual: 0.82, line: 0.3, copy: 0.45 }
+                : { visual: 1.14, line: 0.46, copy: 0.62 };
             let rightPlayed = false;
             let rightCompleted = false;
             let leftEligible = false;
@@ -273,19 +303,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     /* 최종 도착하는 위치 더 바깥으로 가ㄹ려면 높이고 안으로 가려면 낮추고 */
                     xPercent: direction * 16,
                     autoAlpha: 1,
-                    duration: 0.82
+                    duration: animationDurations.visual
                 }, framePosition);
 
                 targetTimeline.to(line, {
                     scaleX: 1,
                     autoAlpha: 1,
-                    duration: 0.3
+                    duration: animationDurations.line
                 }, framePosition + 0.36);
 
                 targetTimeline.to(copy, {
                     autoAlpha: 1,
                     y: 0,
-                    duration: 0.45
+                    duration: animationDurations.copy
                 }, framePosition + 0.44);
             });
 
@@ -339,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 leftTriggerInstance = ScrollTrigger.create({
                     id: 'tech-left-layers',
                     trigger: leftTriggerLayer,
-                    start: 'top 52%',
+                    start: leftTriggerStart,
                     once: false,
                     onEnter: () => {
                         leftEligible = true;
@@ -391,6 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const reviewMedia = gsap.matchMedia();
 
         reviewMedia.add('(min-width: 961px)', () => {
+            const isTabletViewport = window.matchMedia('(max-width: 1024px)').matches;
+            const reviewStart = isTabletViewport ? 'top 60%' : 'top 18%';
             const reviewTimeline = gsap.timeline({
                 paused: true,
                 defaults: {
@@ -454,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ScrollTrigger.create({
                 id: 'review-section-enter',
                 trigger: reviewTextBox,
-                start: 'top 18%',
+                start: reviewStart,
                 once: true,
                 onEnter: () => {
                     if (hasPlayed) {
