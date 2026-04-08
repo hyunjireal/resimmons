@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const bannerStack = bannerWrap.querySelector('.banner_stack');
         const secondaryBanners = bannerWrap.querySelectorAll('.banner_secondary');
         const isTabletMainVisual = () => window.innerWidth <= 1024;
+        let bannerLayoutMode = isTabletMainVisual() ? 'compact' : 'expanded';
 
         if (primaryBanner && bannerStack) {
             const getScrollDistance = () => {
@@ -237,12 +238,18 @@ document.addEventListener('DOMContentLoaded', () => {
             buildBannerScroll();
 
             window.addEventListener('load', () => {
-                ScrollTrigger.refresh();
+                scheduleScrollTriggerRefresh();
             }, { once: true });
 
-            window.addEventListener('resize', () => {
+            onResponsiveModeChange(() => {
+                const nextBannerLayoutMode = isTabletMainVisual() ? 'compact' : 'expanded';
+
+                if (nextBannerLayoutMode === bannerLayoutMode) {
+                    return;
+                }
+
+                bannerLayoutMode = nextBannerLayoutMode;
                 buildBannerScroll();
-                ScrollTrigger.refresh();
             });
         }
     }
@@ -261,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (storySection && storyInner && storyImage && storyKeywords.length && storyButton) {
         const isStoryStaticLayout = () => window.innerWidth <= 1024;
+        let storyLayoutMode = isStoryStaticLayout() ? 'static' : 'interactive';
 
         const setStoryFloatingState = (isActive) => {
             storyInner.classList.toggle('is-keywords-active', isActive);
@@ -369,12 +377,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 buildStoryScroll();
             }
-
-            ScrollTrigger.refresh();
         };
 
         syncStoryInteraction();
-        window.addEventListener('resize', syncStoryInteraction);
+        onResponsiveModeChange(() => {
+            const nextStoryLayoutMode = isStoryStaticLayout() ? 'static' : 'interactive';
+
+            if (nextStoryLayoutMode === storyLayoutMode) {
+                return;
+            }
+
+            storyLayoutMode = nextStoryLayoutMode;
+            syncStoryInteraction();
+        });
     }
 
     const sleepSolutionSection = document.querySelector('.sleep_solution');
@@ -910,6 +925,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let reviewIntroTimeline = null;
         let reviewPrepTween = null;
         let reviewIntroTrigger = null;
+        let reviewRevealTimeline = null;
 
         const getReviewSetCards = (set) => Array.from(set.querySelectorAll('.review_card'));
         const getReviewSetSlots = (set) => Array.from(set.querySelectorAll('.review_card_slot'));
@@ -919,6 +935,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const getReviewStackBaseY = (index) => index * 14;
         const getReviewStackScale = (index) => 1 - (index * 0.035);
         const getReviewStackRotate = (index) => [-6, -2, 2, 6][index] || 0;
+
+        const buildReviewRevealScroll = () => {
+            reviewRevealTimeline?.kill();
+            ScrollTrigger.getById('review-shell-scrub')?.kill();
+            gsap.killTweensOf(reviewSection);
+
+            if (prefersReducedMotion) {
+                gsap.set(reviewSection, {
+                    clearProps: 'transform'
+                });
+                return;
+            }
+
+            gsap.set(reviewSection, {
+                y: 320
+            });
+
+            reviewRevealTimeline = gsap.timeline({
+                defaults: {
+                    ease: 'none'
+                },
+                scrollTrigger: {
+                    id: 'review-shell-scrub',
+                    trigger: reviewSection,
+                    start: 'top bottom',
+                    end: 'top 44%',
+                    scrub: 1,
+                    invalidateOnRefresh: true
+                }
+            });
+
+            reviewRevealTimeline.to(reviewSection, {
+                y: 0,
+                clearProps: 'transform'
+            });
+        };
 
         const setReviewFilterState = (category) => {
             reviewFilterOptions.forEach((option) => {
@@ -1293,6 +1345,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 0);
         };
 
+        buildReviewRevealScroll();
         initializeReviewSets();
         buildReviewIntroTimeline();
         startReviewPrepAnimation();
@@ -1332,6 +1385,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 reviewIntroTrigger?.kill();
             }
 
+            buildReviewRevealScroll();
+
             initializeReviewSets();
 
             if (!reviewIntroPlayed && !isTabletReviewLayout()) {
@@ -1345,6 +1400,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const offlineSection = document.querySelector('.offline');
     const offlineInner = offlineSection?.querySelector('.offline_inner');
+    const offlineTrack = offlineSection?.querySelector('.offline_track');
+    const offlineContent = offlineSection?.querySelector('.offline_content');
+    const offlineInfo = offlineSection?.querySelector('.offline_info');
+    const offlineDescription = offlineInfo?.querySelector('.offline_description');
+    const offlineDescriptionText = offlineInfo?.querySelector('.offline_description_text');
+    const reviewSectionInOffline = offlineSection?.querySelector('.review');
     const offlineTrackButtons = Array.from(document.querySelectorAll('.offline_track_button'));
     const offlineTrackItems = Array.from(document.querySelectorAll('.offline_track_item'));
     const offlineSlides = Array.from(document.querySelectorAll('.offline_slide'));
@@ -1353,9 +1414,60 @@ document.addEventListener('DOMContentLoaded', () => {
         let activeOfflineIndex = Math.max(offlineSlides.findIndex((slide) => slide.classList.contains('is-active')), 0);
         let isOfflineAnimating = false;
         const offlineDescriptionIcons = Array.from(document.querySelectorAll('.offline_description_icon'));
+        const offlineCardButtons = offlineSlides.map((slide) => slide.querySelector('.offline_card_button')).filter(Boolean);
         const offlineCardWraps = offlineSlides.map((slide) => slide.querySelector('.offline_card_wrap')).filter(Boolean);
-        const offlineDescriptions = offlineSlides.map((slide) => slide.querySelector('.offline_description')).filter(Boolean);
+        const offlineSoftHoldTargets = [offlineTrack, offlineContent].filter(Boolean);
+        let offlineButtonRevealTimer = null;
         const activeOfflineSlide = () => offlineSlides[activeOfflineIndex];
+        const updateOfflineInfoContent = (index) => {
+            if (!offlineDescriptionText) {
+                return;
+            }
+
+            offlineDescriptionText.textContent = offlineSlides[index]?.dataset.offlineDescription || '';
+        };
+        const clearOfflineButtonRevealTimer = () => {
+            if (offlineButtonRevealTimer) {
+                window.clearTimeout(offlineButtonRevealTimer);
+                offlineButtonRevealTimer = null;
+            }
+        };
+        const hideOfflineCardButtons = () => {
+            clearOfflineButtonRevealTimer();
+            gsap.killTweensOf(offlineCardButtons);
+            gsap.set(offlineCardButtons, {
+                autoAlpha: 0,
+                pointerEvents: 'none'
+            });
+        };
+        const scheduleOfflineCardButtonReveal = (index = activeOfflineIndex) => {
+            const activeButton = offlineSlides[index]?.querySelector('.offline_card_button');
+
+            clearOfflineButtonRevealTimer();
+
+            if (!activeButton) {
+                return;
+            }
+
+            offlineButtonRevealTimer = window.setTimeout(() => {
+                if (isOfflineAnimating || index !== activeOfflineIndex) {
+                    return;
+                }
+
+                gsap.killTweensOf(activeButton);
+                gsap.to(activeButton, {
+                    autoAlpha: 1,
+                    duration: prefersReducedMotion ? 0 : 0.28,
+                    ease: 'power2.out',
+                    onStart: () => {
+                        gsap.set(activeButton, {
+                            pointerEvents: 'auto'
+                        });
+                    }
+                });
+                offlineButtonRevealTimer = null;
+            }, 200);
+        };
         const getOfflineEntranceTargets = () => {
             const activeSlide = activeOfflineSlide();
 
@@ -1364,14 +1476,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const activeCard = activeSlide.querySelector('.offline_card_wrap');
-            const activeInfo = activeSlide.querySelector('.offline_info');
 
-            return [offlineInner, activeInfo, activeCard].filter(Boolean);
+            return [offlineInner, offlineInfo, activeCard].filter(Boolean);
         };
         const setOfflineEntranceInitialState = () => {
             const targets = getOfflineEntranceTargets();
 
             gsap.killTweensOf(targets);
+            hideOfflineCardButtons();
 
             if (prefersReducedMotion) {
                 gsap.set(targets, {
@@ -1387,10 +1499,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const activeSlide = activeOfflineSlide();
             const activeCard = activeSlide?.querySelector('.offline_card_wrap');
-            const activeInfo = activeSlide?.querySelector('.offline_info');
 
-            if (activeInfo) {
-                gsap.set(activeInfo, {
+            if (offlineInfo) {
+                gsap.set(offlineInfo, {
                     autoAlpha: 0,
                     y: 38
                 });
@@ -1399,8 +1510,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeCard) {
                 gsap.set(activeCard, {
                     autoAlpha: 0,
-                    x: 72,
-                    rotation: 3.8
+                    x: 72
                 });
             }
         };
@@ -1412,11 +1522,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const activeSlide = activeOfflineSlide();
             const activeCard = activeSlide?.querySelector('.offline_card_wrap');
-            const activeInfo = activeSlide?.querySelector('.offline_info');
 
             gsap.timeline({
                 defaults: {
                     ease: 'power3.out'
+                },
+                onComplete: () => {
+                    scheduleOfflineCardButtonReveal();
                 }
             })
                 .to(offlineInner, {
@@ -1424,7 +1536,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     y: 0,
                     duration: 0.55
                 })
-                .to(activeInfo ? [activeInfo] : [], {
+                .to(offlineInfo ? [offlineInfo] : [], {
                     autoAlpha: 1,
                     y: 0,
                     duration: 0.48
@@ -1432,7 +1544,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 .to(activeCard ? [activeCard] : [], {
                     autoAlpha: 1,
                     x: 0,
-                    rotation: 3.8,
                     duration: 0.72
                 }, '-=0.24');
         };
@@ -1472,6 +1583,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const resetOfflineResponsiveState = () => {
             isOfflineAnimating = false;
+            hideOfflineCardButtons();
+            updateOfflineInfoContent(activeOfflineIndex);
 
             offlineSlides.forEach((slide, index) => {
                 const isActive = index === activeOfflineIndex;
@@ -1479,18 +1592,77 @@ document.addEventListener('DOMContentLoaded', () => {
                 slide.setAttribute('aria-hidden', String(!isActive));
             });
 
-            gsap.killTweensOf([...offlineCardWraps, ...offlineDescriptions, ...offlineSlides]);
+            gsap.killTweensOf([...offlineCardWraps, ...offlineSlides, offlineDescription].filter(Boolean));
 
-            gsap.set([...offlineCardWraps, ...offlineDescriptions, ...offlineSlides], {
-                clearProps: 'xPercent,rotation,autoAlpha,x,y,zIndex'
+            gsap.set([...offlineCardWraps, ...offlineSlides, offlineDescription].filter(Boolean), {
+                clearProps: 'autoAlpha,x,y,zIndex'
+            });
+
+            gsap.set(offlineSoftHoldTargets, {
+                clearProps: 'y,autoAlpha'
+            });
+
+            gsap.set(reviewSectionInOffline ? [reviewSectionInOffline] : [], {
+                clearProps: 'transform,opacity'
             });
 
             setOfflineTrackState(activeOfflineIndex);
             setOfflineEntranceInitialState();
         };
 
+        const buildOfflineSoftHoldScroll = () => {
+            ScrollTrigger.getById('offline-review-soft-hold')?.kill();
+            gsap.killTweensOf([...offlineSoftHoldTargets, reviewSectionInOffline].filter(Boolean));
+
+            if (!reviewSectionInOffline || !offlineSoftHoldTargets.length || prefersReducedMotion) {
+                gsap.set(offlineSoftHoldTargets, {
+                    clearProps: 'y,autoAlpha'
+                });
+                gsap.set(reviewSectionInOffline ? [reviewSectionInOffline] : [], {
+                    clearProps: 'transform,opacity'
+                });
+                return;
+            }
+
+            gsap.set(offlineTrack ? [offlineTrack] : [], {
+                y: 0,
+                autoAlpha: 1
+            });
+
+            gsap.set(offlineContent ? [offlineContent] : [], {
+                y: 0,
+                autoAlpha: 1
+            });
+
+            gsap.timeline({
+                defaults: {
+                    ease: 'none'
+                },
+                scrollTrigger: {
+                    id: 'offline-review-soft-hold',
+                    trigger: reviewSectionInOffline,
+                    start: 'top bottom',
+                    end: 'top 48%',
+                    scrub: 1,
+                    invalidateOnRefresh: true
+                }
+            })
+                .to(offlineTrack ? [offlineTrack] : [], {
+                    y: -18,
+                    autoAlpha: 0.88
+                }, 0)
+                .to(offlineContent ? [offlineContent] : [], {
+                    y: -64,
+                    autoAlpha: 0.82
+                }, 0)
+                .to(reviewSectionInOffline ? [reviewSectionInOffline] : [], {
+                    clearProps: 'transform,opacity'
+                }, 0);
+        };
+
         onResponsiveModeChange(() => {
             resetOfflineResponsiveState();
+            buildOfflineSoftHoldScroll();
         });
 
         const animateOfflineTransition = (nextIndex) => {
@@ -1502,39 +1674,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const nextSlide = offlineSlides[nextIndex];
             const currentCard = currentSlide.querySelector('.offline_card_wrap');
             const nextCard = nextSlide.querySelector('.offline_card_wrap');
-            const currentInfo = currentSlide.querySelector('.offline_description');
-            const nextInfo = nextSlide.querySelector('.offline_description');
             const direction = nextIndex > activeOfflineIndex ? 1 : -1;
+            const nextCardWidth = nextCard?.offsetWidth || 490;
+            const currentCardWidth = currentCard?.offsetWidth || 490;
+            const incomingCardOffset = nextCardWidth * 1.75;
+            const outgoingCardOffset = currentCardWidth * 1.5;
 
             isOfflineAnimating = true;
+            hideOfflineCardButtons();
             setOfflineTrackState(nextIndex);
 
             nextSlide.classList.add('is-active');
             nextSlide.setAttribute('aria-hidden', 'false');
 
-            gsap.killTweensOf([currentCard, nextCard, currentInfo, nextInfo]);
+            gsap.killTweensOf([currentCard, nextCard, offlineDescription].filter(Boolean));
 
             gsap.set(nextCard, {
-                xPercent: direction > 0 ? 188 : -188,
-                rotation: direction > 0 ? 12 : -12,
+                x: direction > 0 ? incomingCardOffset : -incomingCardOffset,
                 autoAlpha: 0
             });
 
-            if (nextInfo) {
-                gsap.set(nextInfo, {
-                    autoAlpha: 0,
-                    x: direction > 0 ? 28 : -28
-                });
-            }
-
             gsap.set(currentCard, {
-                xPercent: 0,
-                rotation: 3.8,
+                x: 0,
                 autoAlpha: 1
             });
 
-            if (currentInfo) {
-                gsap.set(currentInfo, {
+            if (offlineDescription) {
+                gsap.set(offlineDescription, {
                     autoAlpha: 1,
                     x: 0
                 });
@@ -1545,8 +1711,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             gsap.timeline({
                 defaults: {
-                    duration: prefersReducedMotion ? 0 : 0.56,
-                    ease: 'none'
+                    duration: prefersReducedMotion ? 0 : 0.78,
+                    ease: 'power2.out'
                 },
                 onComplete: () => {
                     activeOfflineIndex = nextIndex;
@@ -1558,10 +1724,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     gsap.set([currentCard, nextCard], {
-                        clearProps: 'xPercent,rotation,autoAlpha'
+                        x: 0
                     });
 
-                    gsap.set([currentInfo, nextInfo].filter(Boolean), {
+                    gsap.set([currentCard, nextCard], {
+                        clearProps: 'autoAlpha'
+                    });
+
+                    gsap.set([offlineDescription].filter(Boolean), {
                         clearProps: 'x,autoAlpha'
                     });
 
@@ -1574,38 +1744,48 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     isOfflineAnimating = false;
+                    scheduleOfflineCardButtonReveal(nextIndex);
                 }
             })
                 .to(nextCard, {
-                    xPercent: 0,
-                    rotation: 3.8,
+                    x: 0,
                     autoAlpha: 1,
-                    duration: prefersReducedMotion ? 0 : 0.54,
-                    ease: 'none'
+                    duration: prefersReducedMotion ? 0 : 0.72,
+                    ease: 'power3.out'
                 }, 0)
                 .to(currentCard, {
-                    xPercent: direction > 0 ? -168 : 168,
-                    rotation: 3.8,
+                    x: direction > 0 ? -outgoingCardOffset : outgoingCardOffset,
                     autoAlpha: 0,
-                    duration: prefersReducedMotion ? 0 : 0.54,
-                    ease: 'none'
-                }, 0.24)
-                .to(currentInfo ? [currentInfo] : [], {
+                    duration: prefersReducedMotion ? 0 : 0.72,
+                    ease: 'power3.in'
+                }, 0.28)
+                .to(offlineDescription ? [offlineDescription] : [], {
                     autoAlpha: 0,
-                    x: direction > 0 ? -28 : 28,
-                    duration: prefersReducedMotion ? 0 : 0.28,
+                    x: direction > 0 ? -10 : 10,
+                    duration: prefersReducedMotion ? 0 : 0.18,
                     ease: 'power2.out'
-                }, 0.18)
-                .to(nextInfo ? [nextInfo] : [], {
+                }, 0.16)
+                .add(() => {
+                    updateOfflineInfoContent(nextIndex);
+
+                    if (offlineDescription) {
+                        gsap.set(offlineDescription, {
+                            x: direction > 0 ? 10 : -10
+                        });
+                    }
+                }, prefersReducedMotion ? 0 : 0.34)
+                .to(offlineDescription ? [offlineDescription] : [], {
                     autoAlpha: 1,
                     x: 0,
-                    duration: prefersReducedMotion ? 0 : 0.3,
+                    duration: prefersReducedMotion ? 0 : 0.22,
                     ease: 'power2.out'
-                }, 0.22);
+                }, prefersReducedMotion ? 0 : 0.34);
         };
 
+        updateOfflineInfoContent(activeOfflineIndex);
         setOfflineTrackState(activeOfflineIndex);
         setOfflineEntranceInitialState();
+        buildOfflineSoftHoldScroll();
 
         ScrollTrigger.create({
             id: 'offline-enter',
