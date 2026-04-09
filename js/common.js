@@ -280,6 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (subTab) {
+        const isTabletViewport = () => window.innerWidth <= 1024 && window.innerWidth > 430;
+
         const openSubTab = () => {
             subTabScrollY = window.scrollY || window.pageYOffset || 0;
             header.classList.add('is-sub-tab-open');
@@ -333,6 +335,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             link.addEventListener('focus', () => {
+                setActiveSubTab(link);
+            });
+
+            link.addEventListener('click', (event) => {
+                if (!isTabletViewport()) {
+                    return;
+                }
+
+                event.preventDefault();
                 setActiveSubTab(link);
             });
         });

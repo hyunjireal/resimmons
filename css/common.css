@@ -1000,8 +1000,8 @@ footer .info {
   }
 
   header .tab_sub {
-    left: 250px;
-    width: calc(100% - 250px);
+    left: 290px;
+    width: calc(100% - 290px);
   }
 
   header .tab_sub_panel a {
