@@ -1,32 +1,30 @@
 gsap.registerPlugin(ScrollTrigger);
 
 document.addEventListener('DOMContentLoaded', () => {
-    const bestSection = document.querySelector('.best');
-    const bestAll = document.querySelector('.best_all');
+    const productSection = document.querySelector('.product');
+    const productAll = document.querySelector('.product_all');
     const nameCards = document.querySelectorAll('.more .name');
-    let bestTween = null;
-    const bestScrollStartDelay = 320;
+    let productTween = null;
+    const productScrollStartDelay = 140;
 
-    const setupBestScroll = () => {
-        if (!bestSection || !bestAll) return;
+    const setupProductScroll = () => {
+        if (!productSection || !productAll) return;
 
-        if (bestTween) {
-            bestTween.scrollTrigger.kill();
-            bestTween.kill();
-            bestTween = null;
-            gsap.set(bestAll, { clearProps: 'transform' });
+        if (productTween) {
+            productTween.scrollTrigger.kill();
+            productTween.kill();
+            productTween = null;
+            gsap.set(productAll, { clearProps: 'transform' });
         }
 
-        if (window.innerWidth <= 1024) return;
+        const totalWidth = () => Math.max(productAll.scrollWidth - productSection.clientWidth, 0);
 
-        const totalWidth = () => Math.max(bestAll.scrollWidth - bestSection.clientWidth, 0);
-
-        bestTween = gsap.to(bestAll, {
+        productTween = gsap.to(productAll, {
             x: () => -totalWidth(),
             ease: 'none',
             scrollTrigger: {
-                trigger: bestSection,
-                start: () => `top top-=${bestScrollStartDelay}`,
+                trigger: productSection,
+                start: () => `top top-=${productScrollStartDelay}`,
                 end: () => '+=' + totalWidth(),
                 scrub: true,
                 pin: true,
@@ -58,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    setupBestScroll();
+    setupProductScroll();
 
     nameCards.forEach((card) => {
         const tab = card.querySelector('.tab');
@@ -124,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.addEventListener('resize', () => {
-        setupBestScroll();
+        setupProductScroll();
         nameCards.forEach((card) => syncCardSlider(card));
         ScrollTrigger.refresh();
     });
