@@ -952,7 +952,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const getReviewSetCards = (set) => Array.from(set.querySelectorAll('.review_card'));
         const getReviewSetSlots = (set) => Array.from(set.querySelectorAll('.review_card_slot'));
         const getReviewSetInners = (set) => Array.from(set.querySelectorAll('.review_card_inner'));
-        const getReviewSlideDistance = () => reviewStage.offsetWidth + 220;
+        const getReviewSlideDistance = () => {
+            const widestSet = reviewSets.reduce((maxWidth, set) => {
+                return Math.max(maxWidth, set.scrollWidth);
+            }, 0);
+
+            return widestSet + (reviewStage.offsetWidth / 2) + 220;
+        };
+        const getTabletReviewSlideDistance = () => {
+            const widestSet = reviewSets.reduce((maxWidth, set) => {
+                return Math.max(maxWidth, set.scrollWidth);
+            }, 0);
+
+            return Math.max(reviewStage.offsetWidth, widestSet) + 120;
+        };
         const getTabletReviewCenteredOffset = (set) => {
             if (!set) {
                 return 0;
@@ -1094,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const slideDistance = getReviewSlideDistance();
 
             if (isTabletReviewLayout()) {
-                const tabletSlideDistance = reviewStage.offsetWidth;
+                const tabletSlideDistance = getTabletReviewSlideDistance();
                 reviewSets.forEach((set) => {
                     const isActive = set.dataset.reviewSet === activeReviewCategory;
                     set.classList.toggle('is-active', isActive);
@@ -1249,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const slideDistance = reviewStage.offsetWidth;
+                const slideDistance = getTabletReviewSlideDistance();
                 const tabletTargetOffset = getTabletReviewCenteredOffset(nextSet);
                 const direction = targetCategory === 'offline' ? 1 : -1;
 
