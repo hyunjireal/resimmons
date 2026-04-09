@@ -2874,6 +2874,7 @@ body {
 
     .story_button_text {
         font-size: 24px;
+        margin-left: 16px;
     }
 
     .story_button_icon {
